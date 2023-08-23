@@ -1,0 +1,47 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: person-service
+spec:
+  template:
+    metadata:
+      annotations:
+        # which metric to use to decide about scaling
+        autoscaling.knative.dev/metric: "concurrency"
+
+        # How many concurrent requests per pod until scaling up
+        autoscaling.knative.dev/target: "10"
+
+        # scaling parameteres 
+        autoscaling.knative.dev/max-scale: "15"
+        autoscaling.knative.dev/min-scale: "1"
+
+        # scale back to zero if no requests come in within 15s
+        autoscaling.knative.dev/window: "60s"
+
+        # how many pods should be started initially 
+        autoscaling.knative.dev/initial-scale: "1"
+
+        # how long to wait until scaling down
+        autoscaling.knative.dev/scale-down-delay: "15s"
+    spec:
+      containers:
+      - name: person-service-api
+        image: quay.io/wpernath/person-service:latest
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        envFrom:
+          - configMapRef:
+              name: app-config
+          - secretRef:
+              name: wanja-pguser-wanja
+            prefix: DB_
+        resources: 
+          limits:
+            cpu: 500m
+            memory: 256Mi
+          requests:
+            cpu: 10m
+            memory: 128Mi          
+
